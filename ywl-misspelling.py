@@ -1,6 +1,8 @@
 from spellchecker import SpellChecker
 import pandas as pd
 import re
+from edit_distance import edit_distance
+from clustering import hierarchical_clustering
 
 spell = SpellChecker()
 
@@ -101,21 +103,20 @@ def check_column_misspelling(df: pd.DataFrame, col_name: str, location: pd.DataF
             flag, candidates = check_misspelling(line=line, location=location)
             row[col_name + ": Misspelling"] = flag
 
+def clustering_misspelling_check(df: pd.DataFrame, col_name: str):
+    """
+    check misspelling using the heuristic method: 
+    clustering the words, the word with low frequency within a cluster might be misseplling
+    """
+    words = df[col_name].dropna().to_list()
+    cluster_dict = hierarchical_clustering(words = words, dist=edit_distance)
+    for label, cluster in cluster_dict.items():
+        print(f"Cluster {label}: {', '.join(cluster)}")
 
 if __name__ == "__main__":
     df = load_test_dataset()
     locations = load_location()
     locations = flatten_location(locations)
-    # locations.to_csv("test.csv")
-    # info(locations)
-    # info(locations)
-    check_column_misspelling(df, "NTA", locations)
-    print(df[df["NTA: Misspelling"]])
+    # check_column_misspelling(df, "NTA", locations)
+    clustering_misspelling_check(df, "NTA")
 
-    # print(type(df["NTA"]))
-    # info(df)
-
-    # line = "Therre is!  a misseplling,'"
-    # exist, candidates = check_misspelling(line=line)
-    # if exist:
-    #     print(candidates)
