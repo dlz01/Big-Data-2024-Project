@@ -4,7 +4,7 @@ from scipy.spatial.distance import squareform
 from edit_distance import edit_distance
 
 
-def hierarchical_clustering(words, dist):
+def hierarchical_clustering(words, dist, threshold = 2):
     n = len(words)
     distance_matrix = np.zeros((n, n))
 
@@ -15,9 +15,8 @@ def hierarchical_clustering(words, dist):
             distance_matrix[j, i] = distance
 
     # hierarchical clustering
-    linked = linkage(squareform(distance_matrix), "average")
+    linked = linkage(squareform(distance_matrix), "single")
 
-    threshold = 2
     clusters = fcluster(linked, threshold, criterion="distance")
 
     cluster_dict = {}
@@ -33,6 +32,7 @@ def hierarchical_clustering(words, dist):
 if __name__ == "__main__":
     words = ["hello", "thankk", "you", "thank", "lou", "thenk", "very", "much"]
     cluster_dict = hierarchical_clustering(words=words, dist=edit_distance)
+    cluster_dict = hierarchical_clustering(words=[1, 5, 2, 3, 9, 100], dist=lambda x, y: abs(x - y), threshold = 2)
     print(cluster_dict)
     # for label, cluster in cluster_dict.items():
     #     print(f"Cluster {label}: {', '.join(cluster)}")
