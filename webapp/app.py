@@ -24,16 +24,22 @@ app_ui = ui.page_sidebar(
             choices=["Misspelling/Abbreviation", "Invalid value", "NULL value"],
             selected=["Misspelling/Abbreviation", "Invalid value", "NULL value"],
         ), 
+        ui.input_text_area("columns", "Columns to filter:"),
+        ui.input_radio_buttons(
+            "column_type", "Include/Exclude Columns", ["Include", "Exclude"], inline=True
+        ),
         ui.download_button("download", "Download Filtered Dataset"),
+        ui.download_button("download_filtered_out", "Download Rows Filtered Out"),
         width=300
     ),
+    ui.card(
+        ui.output_text("text")),
     ui.card(
         ui.card_header("Filtered Dataset"), 
         ui.output_data_frame("filtered"), height="400px"),
     ui.card(
         ui.card_header("Rows Filtered Out"), 
         ui.output_data_frame("filtered_out"), height="400px"),
-        ui.input_action_button("remove", "Remove"),
 )
 
 
@@ -47,6 +53,28 @@ def server(input: Inputs, output: Outputs, session: Session):
         return pd.read_csv(  # pyright: ignore[reportUnknownMemberType]
             file[0]["datapath"]
         )
+    
+    def process_columns(df, columns_string, include):
+        columns_list = [col.strip() for col in columns_string.split(',')]
+        valid_columns = [col for col in columns_list if col in df.columns]
+
+        if not valid_columns:
+            return list(df.columns)
+    
+        if include:
+            return valid_columns
+        else:
+            return [col for col in df.columns if col not in valid_columns]
+    
+    @render.text
+    def text():
+        df = parsed_file()
+
+        if df.empty:
+            return "Please upload an CSV"
+        include = True if input.column_type() == "Include" else False
+        cols = process_columns(df, input.columns(), include)
+        return f"Columns to filter: {cols}"
 
     @render.data_frame
     def filtered():
@@ -54,7 +82,9 @@ def server(input: Inputs, output: Outputs, session: Session):
 
         if df.empty:
             return render.DataGrid(df)
-        processed, processed_out = process(df, input.filters())
+        include = True if input.column_type() == "Include" else False
+        cols = process_columns(df, input.columns(), include)
+        processed, _ = process(df, input.filters(), input.columns())
         return render.DataGrid(processed)
     
     @render.data_frame
@@ -63,14 +93,17 @@ def server(input: Inputs, output: Outputs, session: Session):
 
         if df.empty:
             return render.DataGrid(df)
-        # processed, processed_out = process(filtered.data_view(), input.filters())
-        processed, processed_out = process(df, input.filters())
+        include = True if input.column_type() == "Include" else False
+        cols = process_columns(df, input.columns(), include)
+        _, processed_out = process(df, input.filters(), input.columns())
         return render.DataGrid(processed_out, selection_mode="rows")
     
     @render.download(filename="filtered.csv")
     async def download():
         yield filtered.data_view().to_string(index=False)
-
-
+    
+    @render.download(filename="filtered.csv")
+    async def download_filtered_out():
+        yield filtered_out.data_view().to_string(index=False)
 
 app = App(app_ui, server)

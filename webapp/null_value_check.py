@@ -1,6 +1,6 @@
 import pandas as pd
 
-def null_value(df, df_out):
+def null_value_check(df, df_out, columns):
     mask = df.isna().any(axis=1)
 
     filtered_out = df[mask]
