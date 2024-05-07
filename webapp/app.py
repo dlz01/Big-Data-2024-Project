@@ -26,11 +26,11 @@ app_ui = ui.page_sidebar(
         ), 
         ui.input_text_area("columns", "Columns to filter:"),
         ui.input_radio_buttons(
-            "column_type", "Include/Exclude Columns", ["Include", "Exclude"], inline=True
+            "column_type", "Include/Exclude Columns", ["Include", "Exclude", "All"], inline=True
         ),
         ui.download_button("download", "Download Filtered Dataset"),
         ui.download_button("download_filtered_out", "Download Rows Filtered Out"),
-        width=300
+        width=320
     ),
     ui.card(
         ui.output_text("text")),
@@ -54,14 +54,13 @@ def server(input: Inputs, output: Outputs, session: Session):
             file[0]["datapath"]
         )
     
-    def process_columns(df, columns_string, include):
+    def process_columns(df, columns_string, column_type):
         columns_list = [col.strip() for col in columns_string.split(',')]
         valid_columns = [col for col in columns_list if col in df.columns]
 
-        if not valid_columns:
+        if not valid_columns or column_type == "All":
             return list(df.columns)
-    
-        if include:
+        elif column_type == "Include":
             return valid_columns
         else:
             return [col for col in df.columns if col not in valid_columns]
@@ -72,9 +71,8 @@ def server(input: Inputs, output: Outputs, session: Session):
 
         if df.empty:
             return "Please upload an CSV"
-        include = True if input.column_type() == "Include" else False
-        cols = process_columns(df, input.columns(), include)
-        return f"Columns to filter: {cols}"
+        cols = process_columns(df, input.columns(), input.column_type())
+        return f"Columns to filter: {', '.join(cols)}"
 
     @render.data_frame
     def filtered():
@@ -82,9 +80,8 @@ def server(input: Inputs, output: Outputs, session: Session):
 
         if df.empty:
             return render.DataGrid(df)
-        include = True if input.column_type() == "Include" else False
-        cols = process_columns(df, input.columns(), include)
-        processed, _ = process(df, input.filters(), input.columns())
+        cols = process_columns(df, input.columns(), input.column_type())
+        processed, _ = process(df, input.filters(), cols)
         return render.DataGrid(processed)
     
     @render.data_frame
@@ -93,9 +90,8 @@ def server(input: Inputs, output: Outputs, session: Session):
 
         if df.empty:
             return render.DataGrid(df)
-        include = True if input.column_type() == "Include" else False
-        cols = process_columns(df, input.columns(), include)
-        _, processed_out = process(df, input.filters(), input.columns())
+        cols = process_columns(df, input.columns(), input.column_type())
+        _, processed_out = process(df, input.filters(), cols)
         return render.DataGrid(processed_out, selection_mode="rows")
     
     @render.download(filename="filtered.csv")
