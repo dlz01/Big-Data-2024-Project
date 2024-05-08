@@ -2,14 +2,8 @@ from spellchecker import SpellChecker
 import pandas as pd
 import re
 from collections import Counter
-from edit_distance import edit_distance
-from clustering import hierarchical_clustering
 
 spell = SpellChecker()
-
-
-def misspell(df: pd.DataFrame, df_out: pd.DataFrame, columns: list):
-    process_df = df.copy(deep=True)
 
 
 def load_location():
@@ -130,3 +124,17 @@ def check_frequency(word: str, df: pd.DataFrame, col_name: str):
     col = col.explode()
     frequency = (col == word.lower()).sum()
     return frequency
+
+
+def misspell(df: pd.DataFrame, columns: list):
+    process_df = df.copy(deep=True)
+    locations = load_location()
+    locations = flatten_location(locations)
+    for column in columns:
+        check_column_misspelling(process_df, column, locations)
+    filter_cols = [column + ": Misspelling" for column in columns]
+    combined_condition = process_df.apply(
+        lambda row: any(row[col] for col in filter_cols), axis=1
+    )
+    process_df = process_df[combined_condition]
+    return process_df.drop(columns=filter_cols)
