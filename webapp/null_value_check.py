@@ -1,7 +1,7 @@
 import pandas as pd
 
 def null_value_check(df, columns):
-    mask = df.isna().any(axis=1)
+    mask = df[columns].isna().any(axis=1)
 
     # filtered_out = df[mask]
     filtered = df[~mask]
