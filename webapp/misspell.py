@@ -66,6 +66,8 @@ def check_misspelling(line: str, location: pd.DataFrame):
     return:
         (true/false, list of potential misspelling words)
     """
+    if not isinstance(line, str):
+        line = str(line) if line is not None else ""
     line = re.sub("[^a-zA-Z ]", " ", line)
     line = re.sub(r"\s+", " ", line).strip()
     words = line.split(" ")

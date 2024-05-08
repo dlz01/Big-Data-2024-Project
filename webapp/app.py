@@ -1,10 +1,6 @@
-# pip install Pillow
 # pip install shiny
 from shiny import App, ui, render, reactive
 import matplotlib.pyplot as plt
-from PIL import Image, ImageDraw
-import io
-import tempfile
 import pandas as pd
 
 from shiny import App, Inputs, Outputs, Session, reactive, render, ui
