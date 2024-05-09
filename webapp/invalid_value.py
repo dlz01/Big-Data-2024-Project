@@ -2,7 +2,26 @@ import pandas as pd
 from sklearn.cluster import KMeans, DBSCAN
 
 def invalid_value(df, columns):
+    df = df.copy()
+    for col in columns:
+        df = remove_outliers(df, col)
     return df
+
+def remove_outliers(df, col):
+    if not pd.api.types.is_numeric_dtype(df[col]):
+        return df
+    Q1 = df[col].quantile(0.25)
+    Q3 = df[col].quantile(0.75)
+    IQR = Q3 - Q1
+    if IQR == 0:
+        return df
+    
+    lower_bound = Q1 - 1.5 * IQR
+    upper_bound = Q3 + 1.5 * IQR
+    
+    filtered_df = df[(df[col] >= lower_bound) & (df[col] <= upper_bound)]
+    
+    return filtered_df
 
 # def remove_outliers_with_clustering(df, cols):
 #     cols_numeric = [col for col in cols if pd.api.types.is_numeric_dtype(df[col])]
